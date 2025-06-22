@@ -1,15 +1,21 @@
-import { useState, useEffect } from 'react';
-import { Table, Button, Checkbox, Dropdown } from 'antd';
-import type { MenuProps } from 'antd';
-import { MoreOutlined, PlusOutlined } from '@ant-design/icons';
-import type { ColumnsType } from 'antd/es/table';
-import type { Record, Field } from '../types';
-import { getRecords, saveRecords, getFields } from '../services/storage';
+import { useState, useEffect } from "react";
+import { Table, Button, Checkbox, Dropdown, message } from "antd";
+import type { MenuProps } from "antd";
+import { MoreOutlined, PlusOutlined } from "@ant-design/icons";
+import "./MemberTable.css";
+import type { ColumnsType } from "antd/es/table";
+import type { Record, Field } from "../types";
+import { getRecords, getFields, deleteRecord } from "../services/storage";
+import MemberForm from "./MemberForm";
 
-const MemberTable: React.FC = () => {
+function MemberTable() {
   const [records, setRecords] = useState<Record[]>([]);
   const [fields, setFields] = useState<Field[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [formVisible, setFormVisible] = useState<boolean>(false);
+  const [currentRecord, setCurrentRecord] = useState<Record | undefined>(
+    undefined
+  );
 
   // 초기 데이터 로드
   useEffect(() => {
@@ -20,7 +26,7 @@ const MemberTable: React.FC = () => {
         setRecords(loadedRecords);
         setFields(loadedFields);
       } catch (error) {
-        console.error('데이터 로드 중 오류 발생:', error);
+        console.error("데이터 로드 중 오류 발생:", error);
       } finally {
         setLoading(false);
       }
@@ -36,23 +42,26 @@ const MemberTable: React.FC = () => {
         title: field.label,
         dataIndex: field.id,
         key: field.id,
-        sorter: (a: Record, b: Record) => {
-          if (field.type === 'number') {
-            return Number(a[field.id] || 0) - Number(b[field.id] || 0);
-          }
-          const aValue = String(a[field.id] || '');
-          const bValue = String(b[field.id] || '');
-          return aValue.localeCompare(bValue);
-        },
-        filters: Array.from(new Set(records.map(record => record[field.id] !== undefined ? record[field.id] : '')))
-          .map(value => ({ text: String(value), value: String(value) })),
-        onFilter: (value, record: Record) => 
-          String(record[field.id] || '') === String(value),
+        filters: Array.from(
+          new Set(
+            records.map((record) =>
+              record[field.id] !== undefined ? record[field.id] : ""
+            )
+          )
+        ).map((value) => ({ text: String(value), value: String(value) })),
+        onFilter: (value, record: Record) =>
+          String(record[field.id] || "") === String(value),
       };
 
       // 체크박스 필드 렌더링
-      if (field.type === 'checkbox') {
-        column.render = (value: boolean) => <Checkbox checked={value} disabled />;
+      if (field.type === "checkbox") {
+        column.render = (value: boolean) => (
+          <Checkbox
+            checked={value}
+            onChange={() => {}}
+            style={{ pointerEvents: "none" }}
+          />
+        );
       }
 
       return column;
@@ -60,26 +69,31 @@ const MemberTable: React.FC = () => {
 
     // 액션 컬럼 추가
     columns.push({
-      title: '',
-      key: 'action',
+      title: "",
+      key: "action",
       width: 50,
       render: (_: unknown, record: Record) => (
         <Dropdown
           menu={{
             items: [
               {
-                key: '1',
-                label: '수정',
+                key: "1",
+                label: "수정",
                 onClick: () => handleEdit(record),
+                className: "edit-action",
               },
               {
-                key: '2',
-                label: '삭제',
+                key: "2",
+                label: "삭제",
                 onClick: () => handleDelete(record.id),
+                className: "delete-action",
+                danger: true,
               },
-            ] as MenuProps['items']
+            ] as MenuProps["items"],
           }}
-          trigger={['click']}
+          trigger={["click"]}
+          overlayClassName="member-action-dropdown"
+          placement="bottomRight"
         >
           <Button type="text" icon={<MoreOutlined />} />
         </Dropdown>
@@ -91,32 +105,48 @@ const MemberTable: React.FC = () => {
 
   // 레코드 수정 핸들러
   const handleEdit = (record: Record) => {
-    console.log('수정:', record);
-    // TODO: 수정 모달 구현
+    setCurrentRecord(record);
+    setFormVisible(true);
   };
 
   // 레코드 삭제 핸들러
   const handleDelete = (id: string) => {
-    const updatedRecords = records.filter(record => record.id !== id);
-    setRecords(updatedRecords);
-    saveRecords(updatedRecords);
+    const result = deleteRecord(id);
+    if (result.success) {
+      setRecords(records.filter((record) => record.id !== id));
+      message.success("회원이 삭제되었습니다.");
+    } else {
+      message.error("회원 삭제 중 오류가 발생했습니다.");
+    }
   };
 
   // 레코드 추가 핸들러
   const handleAdd = () => {
-    console.log('새 회원 추가');
-    // TODO: 추가 모달 구현
+    setCurrentRecord(undefined);
+    setFormVisible(true);
+  };
+
+  // 폼 닫기 핸들러
+  const handleFormClose = () => {
+    setFormVisible(false);
+  };
+
+  // 저장 완료 후 데이터 새로고침
+  const handleSaveComplete = () => {
+    try {
+      const loadedRecords = getRecords();
+      setRecords(loadedRecords);
+    } catch (error) {
+      console.error("데이터 로드 중 오류 발생:", error);
+      message.error("데이터를 새로고침하는 중 오류가 발생했습니다.");
+    }
   };
 
   return (
     <div className="member-table">
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-        <h2 style={{ margin: 0 }}>회원 목록</h2>
-        <Button 
-          type="primary" 
-          icon={<PlusOutlined />} 
-          onClick={handleAdd}
-        >
+      <div className="member-table-header">
+        <h2 className="member-table-title">회원 목록</h2>
+        <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
           추가
         </Button>
       </div>
@@ -125,10 +155,19 @@ const MemberTable: React.FC = () => {
         dataSource={records}
         rowKey="id"
         loading={loading}
-        pagination={{ pageSize: 10 }}
+        pagination={false}
+      />
+
+      {/* 회원 추가/수정 폼 */}
+      <MemberForm
+        visible={formVisible}
+        onClose={handleFormClose}
+        onSave={handleSaveComplete}
+        record={currentRecord}
+        fields={fields}
       />
     </div>
   );
-};
+}
 
 export default MemberTable;

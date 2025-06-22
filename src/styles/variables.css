@@ -1,0 +1,35 @@
+:root {
+  /* 색상 변수 */
+  --color-primary: #4A7CFE;
+  --color-error: #FF4D4F;
+  --color-success: #52C41A;
+  --color-warning: #FAAD14;
+  --color-info: #1890FF;
+  --color-border: #E3E3E3;
+  --color-text-tertiary: #00000073;
+  
+  /* 사이즈 변수 */
+  --border-radius-sm: 4px;
+  --border-radius-md: 6px;
+  --border-radius-lg: 10px;
+  
+  /* 컴포넌트 변수 */
+  --button-border-radius: 8px;
+  --dropdown-border-radius: 10px;
+  --input-border-radius: 8px;
+  --select-border-radius: 8px;
+  --datepicker-border-radius: 8px;
+  --control-height: 32px;
+  
+  /* 패딩 변수 */
+  --padding-xxs: 4px;
+  --padding-xs: 8px;
+  --padding-sm: 12px;
+  --padding-md: 16px;
+  --padding-lg: 24px;
+  --input-padding-horizontal: 12px;
+  
+  /* 컴포넌트 사이즈 변수 */
+  --dropdown-item-height: 32px;
+  --dropdown-menu-width: 173px;
+}

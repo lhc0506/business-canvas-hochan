@@ -6,36 +6,9 @@
   margin-bottom: var(--padding-md);
 }
 
-.member-form .ant-form-item-label > label {
-  color: var(--color-text-tertiary);
-  font-size: 14px;
-  font-weight: 600;
-}
-
-
-
-/* 직업 선택 필드 너비 설정 */
-.member-form .job-select {
-  width: 360px !important;
-}
-
 /* 가입일 필드 너비 설정 */
 .member-form .join-date-picker {
   width: auto !important;
-}
-
-/* 메모 필드 높이 설정 */
-.member-form .memo-textarea {
-  min-height: 54px;
-  resize: vertical;
-}
-
-.member-form .ant-picker {
-  width: 100%;
-}
-
-.member-form .ant-select {
-  width: 100%;
 }
 
 .member-form-footer {

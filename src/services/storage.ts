@@ -1,37 +1,21 @@
 import type { Record, Field, ValidationResult } from "../types";
-import { INITIAL_RECORDS } from "../constants/initialData";
-import { DEFAULT_FIELDS } from "../constants/fields";
 import { validateRecord, validateRecords } from "../utils/validation";
+import { getStorageAdapter } from "./storageAdapter";
 
-// 환경 변수에서 스토리지 타입 가져오기
-const STORAGE_TYPE = import.meta.env.VITE_STORAGE || "in-memory";
-
-// 로컬 스토리지 키
-const RECORDS_KEY = "member-table-records";
-const FIELDS_KEY = "member-table-fields";
-
-// 인메모리 스토리지
-let inMemoryRecords: Record[] = [...INITIAL_RECORDS];
-let inMemoryFields: Field[] = [...DEFAULT_FIELDS];
+// 스토리지 어댑터 인스턴스 가져오기
+const storageAdapter = getStorageAdapter();
 
 /**
  * 레코드 데이터 가져오기
  * @returns 레코드 배열
  */
 export const getRecords = (): Record[] => {
-  if (STORAGE_TYPE === "local-storage") {
-    try {
-      const storedRecords = localStorage.getItem(RECORDS_KEY);
-      return storedRecords ? JSON.parse(storedRecords) : [...INITIAL_RECORDS];
-    } catch (error) {
-      console.error(
-        "로컬 스토리지에서 레코드를 불러오는 중 오류가 발생했습니다:",
-        error
-      );
-      return [...INITIAL_RECORDS];
-    }
+  try {
+    return storageAdapter.getRecords();
+  } catch (error) {
+    console.error("레코드를 불러오는 중 오류가 발생했습니다:", error);
+    return [];
   }
-  return inMemoryRecords;
 };
 
 /**
@@ -51,12 +35,8 @@ export const saveRecords = (
   }
 
   try {
-    if (STORAGE_TYPE === "local-storage") {
-      localStorage.setItem(RECORDS_KEY, JSON.stringify(records));
-    } else {
-      inMemoryRecords = [...records];
-    }
-    return { success: true };
+    const success = storageAdapter.saveRecords(records);
+    return { success };
   } catch (error) {
     console.error("레코드 저장 중 오류가 발생했습니다:", error);
     return { success: false };
@@ -102,14 +82,8 @@ export const deleteRecord = (id: string): { success: boolean } => {
   try {
     const records = getRecords();
     const filteredRecords = records.filter((record) => record.id !== id);
-
-    if (STORAGE_TYPE === "local-storage") {
-      localStorage.setItem(RECORDS_KEY, JSON.stringify(filteredRecords));
-    } else {
-      inMemoryRecords = filteredRecords;
-    }
-
-    return { success: true };
+    const success = storageAdapter.saveRecords(filteredRecords);
+    return { success };
   } catch (error) {
     console.error("레코드 삭제 중 오류가 발생했습니다:", error);
     return { success: false };
@@ -121,19 +95,12 @@ export const deleteRecord = (id: string): { success: boolean } => {
  * @returns 필드 정의 배열
  */
 export const getFields = (): Field[] => {
-  if (STORAGE_TYPE === "local-storage") {
-    try {
-      const storedFields = localStorage.getItem(FIELDS_KEY);
-      return storedFields ? JSON.parse(storedFields) : [...DEFAULT_FIELDS];
-    } catch (error) {
-      console.error(
-        "로컬 스토리지에서 필드를 불러오는 중 오류가 발생했습니다:",
-        error
-      );
-      return [...DEFAULT_FIELDS];
-    }
+  try {
+    return storageAdapter.getFields();
+  } catch (error) {
+    console.error("필드를 불러오는 중 오류가 발생했습니다:", error);
+    return [];
   }
-  return inMemoryFields;
 };
 
 /**
@@ -143,12 +110,8 @@ export const getFields = (): Field[] => {
  */
 export const saveFields = (fields: Field[]): { success: boolean } => {
   try {
-    if (STORAGE_TYPE === "local-storage") {
-      localStorage.setItem(FIELDS_KEY, JSON.stringify(fields));
-    } else {
-      inMemoryFields = [...fields];
-    }
-    return { success: true };
+    const success = storageAdapter.saveFields(fields);
+    return { success };
   } catch (error) {
     console.error("필드 저장 중 오류가 발생했습니다:", error);
     return { success: false };
@@ -184,23 +147,10 @@ export const deleteField = (id: string): { success: boolean } => {
   try {
     const fields = getFields();
     const filteredFields = fields.filter((field) => field.id !== id);
-
-    if (STORAGE_TYPE === "local-storage") {
-      localStorage.setItem(FIELDS_KEY, JSON.stringify(filteredFields));
-    } else {
-      inMemoryFields = filteredFields;
-    }
-
-    return { success: true };
+    const success = storageAdapter.saveFields(filteredFields);
+    return { success };
   } catch (error) {
     console.error("필드 삭제 중 오류가 발생했습니다:", error);
     return { success: false };
   }
-};
-
-/**
- * 저장 방식 가져오기
- */
-export const getStorageType = (): string => {
-  return STORAGE_TYPE;
 };

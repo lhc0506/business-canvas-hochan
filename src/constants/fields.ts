@@ -20,7 +20,7 @@ export const DEFAULT_FIELDS: Field[] = [
     label: "주소",
     required: false,
     constraints: {
-      maxLength: 200,
+      maxLength: 20,
     },
     description: "회원의 주소를 입력하세요",
     defaultValue: "",
@@ -31,7 +31,7 @@ export const DEFAULT_FIELDS: Field[] = [
     label: "메모",
     required: false,
     constraints: {
-      maxLength: 500,
+      maxLength: 50,
     },
     description: "회원에 대한 추가 정보를 입력하세요",
     defaultValue: "",

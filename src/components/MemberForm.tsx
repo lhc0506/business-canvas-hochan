@@ -1,35 +1,24 @@
 import { useState, useEffect } from "react";
-import {
-  Modal,
-  Form,
-  Input,
-  DatePicker,
-  Select,
-  Checkbox,
-  Button,
-  message,
-} from "antd";
+import { Modal, Form, Button } from "antd";
 import "./MemberForm.css";
 import dayjs from "dayjs";
-import type { Record, Field, ValidationError } from "../types";
+import type { Record, ValidationResult, Field } from "../types";
 import { validateFieldValue } from "../utils/validation";
-import { saveRecord } from "../services/storage";
+import { FormField } from "./FormFields";
+import { useRecords } from "../hooks/useRecords";
+import { useFields } from "../hooks/useFields";
 
 interface MemberFormProps {
   visible: boolean;
   onClose: () => void;
   onSave: () => void;
   record?: Record;
-  fields: Field[];
 }
 
-function MemberForm({
-  visible,
-  onClose,
-  onSave,
-  record,
-  fields,
-}: MemberFormProps) {
+function MemberForm({ visible, onClose, onSave, record }: MemberFormProps) {
+  // 커스텀 훅을 사용하여 필드 정보 관리
+  const { fields } = useFields();
+  const { saveRecordData } = useRecords();
   const [form] = Form.useForm();
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [submitting, setSubmitting] = useState(false);
@@ -132,13 +121,10 @@ function MemberForm({
         ...formattedValues,
       };
 
-      // 저장 시도
-      const result = saveRecord(recordToSave);
+      // 저장 시도 - 커스텀 훅 사용
+      const result = await saveRecordData(recordToSave);
 
       if (result.success) {
-        message.success(
-          record ? "회원 정보가 수정되었습니다." : "새 회원이 추가되었습니다."
-        );
         onSave();
         onClose();
       } else if (
@@ -148,17 +134,13 @@ function MemberForm({
       ) {
         // 유효성 검사 오류 표시
         const newErrors: { [key: string]: string } = {};
-        result.validationResult.errors.forEach((error: ValidationError) => {
+        result.validationResult.errors.forEach((error) => {
           newErrors[error.fieldId] = error.message;
         });
         setErrors(newErrors);
-        message.error("입력 내용을 확인해주세요.");
-      } else {
-        message.error("저장 중 오류가 발생했습니다.");
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("폼 제출 오류:", error);
-      message.error("입력 내용을 확인해주세요.");
     } finally {
       setSubmitting(false);
     }
@@ -181,141 +163,21 @@ function MemberForm({
 
   // 필드 렌더링 함수
   const renderField = (field: Field) => {
-    const error = errors[field.id];
-    const isRequired = field.required;
+    const validationResult: ValidationResult = {
+      isValid: !errors[field.id],
+      errors: errors[field.id]
+        ? [{ fieldId: field.id, message: errors[field.id] }]
+        : [],
+    };
 
-    switch (field.type) {
-      case "text":
-        // 메모 필드는 TextArea로 렌더링
-        if (field.id === "memo") {
-          return (
-            <Form.Item
-              key={field.id}
-              name={field.id}
-              label={field.label}
-              validateStatus={error ? "error" : undefined}
-              help={error}
-              required={isRequired}
-              rules={[{ required: isRequired }]}
-            >
-              <Input.TextArea
-                rows={4}
-                className="memo-textarea"
-                onChange={(e) => validateField(field.id, e.target.value)}
-              />
-            </Form.Item>
-          );
-        }
-
-        return (
-          <Form.Item
-            key={field.id}
-            name={field.id}
-            label={field.label}
-            validateStatus={error ? "error" : undefined}
-            help={error}
-            required={isRequired}
-            rules={[{ required: isRequired }]}
-          >
-            <Input onChange={(e) => validateField(field.id, e.target.value)} />
-          </Form.Item>
-        );
-
-      case "number":
-        return (
-          <Form.Item
-            key={field.id}
-            name={field.id}
-            label={field.label}
-            validateStatus={error ? "error" : undefined}
-            help={error}
-            required={isRequired}
-            rules={[{ required: isRequired }]}
-          >
-            <Input
-              type="number"
-              placeholder={`${field.label}을(를) 입력하세요`}
-              onChange={(e) =>
-                validateField(
-                  field.id,
-                  e.target.value ? Number(e.target.value) : null
-                )
-              }
-            />
-          </Form.Item>
-        );
-
-      case "date":
-        return (
-          <Form.Item
-            key={field.id}
-            name={field.id}
-            label={field.label}
-            validateStatus={error ? "error" : undefined}
-            help={error}
-            required={isRequired}
-            rules={[{ required: isRequired }]}
-          >
-            <DatePicker
-              className="join-date-picker"
-              onChange={(date) =>
-                validateField(field.id, date ? date.format("YYYY-MM-DD") : null)
-              }
-              allowClear={true}
-            />
-          </Form.Item>
-        );
-
-      case "select":
-        return (
-          <Form.Item
-            key={field.id}
-            name={field.id}
-            label={field.label}
-            validateStatus={error ? "error" : undefined}
-            help={error}
-            required={isRequired}
-            rules={[{ required: isRequired }]}
-          >
-            <Select
-              className={field.id === "job" ? "job-select" : ""}
-              placeholder={`${field.label}을(를) 선택하세요`}
-              options={field.options?.map((option) => ({
-                label: option,
-                value: option,
-              }))}
-              onChange={(value) => validateField(field.id, value)}
-              defaultValue={
-                field.id === "job" && field.options && field.options.length > 0
-                  ? field.options[0]
-                  : field.defaultValue
-              }
-            />
-          </Form.Item>
-        );
-
-      case "checkbox":
-        return (
-          <Form.Item
-            key={field.id}
-            name={field.id}
-            valuePropName="checked"
-            validateStatus={error ? "error" : undefined}
-            help={error}
-            label={field.id === "emailConsent" ? "이메일 수신 동의" : ""}
-            rules={[{ required: isRequired }]}
-          >
-            <Checkbox
-              onChange={(e) => validateField(field.id, e.target.checked)}
-            >
-              {field.id === "emailConsent" ? "" : field.label}
-            </Checkbox>
-          </Form.Item>
-        );
-
-      default:
-        return null;
-    }
+    return (
+      <FormField
+        key={field.id}
+        field={field}
+        validationResult={validationResult}
+        onChange={(value) => validateField(field.id, value)}
+      />
+    );
   };
 
   return (

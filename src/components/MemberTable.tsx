@@ -1,39 +1,20 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Table, Button, Checkbox, Dropdown, message } from "antd";
 import type { MenuProps } from "antd";
 import { MoreOutlined, PlusOutlined } from "@ant-design/icons";
 import "./MemberTable.css";
 import type { ColumnsType } from "antd/es/table";
-import type { Record, Field } from "../types";
-import { getRecords, getFields, deleteRecord } from "../services/storage";
+import type { Record } from "../types";
 import MemberForm from "./MemberForm";
+import { useRecords } from "../hooks/useRecords";
 
 function MemberTable() {
-  const [records, setRecords] = useState<Record[]>([]);
-  const [fields, setFields] = useState<Field[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  // 커스텀 훅을 사용하여 레코드 관리
+  const { records, fields, loading, loadData, removeRecord } = useRecords();
   const [formVisible, setFormVisible] = useState<boolean>(false);
   const [currentRecord, setCurrentRecord] = useState<Record | undefined>(
     undefined
   );
-
-  // 초기 데이터 로드
-  useEffect(() => {
-    const loadData = () => {
-      try {
-        const loadedRecords = getRecords();
-        const loadedFields = getFields();
-        setRecords(loadedRecords);
-        setFields(loadedFields);
-      } catch (error) {
-        console.error("데이터 로드 중 오류 발생:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadData();
-  }, []);
 
   // 테이블 컬럼 생성
   const generateColumns = (): ColumnsType<Record> => {
@@ -110,12 +91,9 @@ function MemberTable() {
   };
 
   // 레코드 삭제 핸들러
-  const handleDelete = (id: string) => {
-    const result = deleteRecord(id);
-    if (result.success) {
-      setRecords(records.filter((record) => record.id !== id));
-      message.success("회원이 삭제되었습니다.");
-    } else {
+  const handleDelete = async (id: string) => {
+    const result = await removeRecord(id);
+    if (!result.success) {
       message.error("회원 삭제 중 오류가 발생했습니다.");
     }
   };
@@ -133,13 +111,7 @@ function MemberTable() {
 
   // 저장 완료 후 데이터 새로고침
   const handleSaveComplete = () => {
-    try {
-      const loadedRecords = getRecords();
-      setRecords(loadedRecords);
-    } catch (error) {
-      console.error("데이터 로드 중 오류 발생:", error);
-      message.error("데이터를 새로고침하는 중 오류가 발생했습니다.");
-    }
+    loadData();
   };
 
   return (
@@ -164,7 +136,6 @@ function MemberTable() {
         onClose={handleFormClose}
         onSave={handleSaveComplete}
         record={currentRecord}
-        fields={fields}
       />
     </div>
   );

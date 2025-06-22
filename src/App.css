@@ -7,16 +7,37 @@
   min-height: 100vh;
 }
 
+.app-content {
+  padding: var(--padding-lg);
+  margin-top: 20px;
+}
+
 .site-layout-content {
-  border-radius: 4px;
+  background: #fff;
+  padding: var(--padding-lg);
+  min-height: 280px;
+  border-radius: var(--border-radius-sm);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.09);
 }
 
-.ant-layout-header {
-  background: #1890ff;
+.app-tabs {
+  margin-bottom: var(--padding-md);
 }
 
-.ant-layout-footer {
+.app-tabs .ant-tabs-nav {
+  margin-bottom: var(--padding-md);
+}
+
+.app-tabs .ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: var(--color-primary);
+}
+
+.app-tabs .ant-tabs-ink-bar {
+  background-color: var(--color-primary);
+}
+
+.app-footer {
+  text-align: center;
   background: #f0f2f5;
 }
 
@@ -32,4 +53,17 @@
 
 .read-the-docs {
   color: #888;
+}
+
+.ant-form-item-required {
+  flex-direction: row-reverse;
+}
+
+.ant-form-item-required::before {
+  margin-left: 4px;
+}
+
+.ant-form-item-required::after {
+  width: 0;
+  margin: 0 !important;
 }
